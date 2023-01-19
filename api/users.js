@@ -1,20 +1,8 @@
 const express = require('express');
 const usersRouter = express.Router();
 
-// usersRouter.use((req, res, next) => {
-//   console.log("A request is being made to /users");
-
-//   next(); // THIS IS DIFFERENT
-// });
-
-// usersRouter.get('/', (req, res) => {
-//   res.send({
-//     users: []
-//   });
-// });
-
 // NEW
-const { getAllUsers } = require('../db');
+const { getAllUsers, getUserByUsername } = require('../db');
 
 // UPDATE
 usersRouter.get('/', async (req, res) => {
@@ -25,9 +13,50 @@ usersRouter.get('/', async (req, res) => {
   });
 });
 
+// usersRouter.post('/login', async (req, res, next) => {
+//   console.log(req.body);
+//   res.end();
+// });
 usersRouter.post('/login', async (req, res, next) => {
-  console.log(req.body);
-  res.end();
+  const { username, password } = req.body;
+
+  // request must have both
+  if (!username || !password) {
+    next({
+      name: "MissingCredentialsError",
+      message: "Please supply both a username and password"
+    });
+  }
+
+  try {
+    const user = await getUserByUsername(username);
+
+    if (user && user.password == password) {
+      // create token & return to user
+      res.send({ message: "you're logged in!" });
+    } else {
+      next({ 
+        name: 'IncorrectCredentialsError', 
+        message: 'Username or password is incorrect'
+      });
+    }
+    
+  } catch(error) {
+    console.log(error);
+    next(error);
+  }
 });
+
+const jwt = require('jsonwebtoken');
+
+const user = { id: 3, username: 'albert' };
+// encode/encrypt the user
+const token = jwt.sign(user, 'server secret');
+
+// decode/decrypt the user
+const recoveredData = jwt.verify(token, 'server secret');
+console.log(recoveredData);
+
+
 
 module.exports = usersRouter;
