@@ -88,12 +88,33 @@ async function getUserById(userId) {
  * POST Methods
  */
 
-async function createPost({
+// async function createPost({
+//   authorId,
+//   title,
+//   content,
+//   tags = [] // this is new
+// }) {
+//   try {
+//     const { rows: [ post ] } = await client.query(`
+//       INSERT INTO posts("authorId", title, content) 
+//       VALUES($1, $2, $3)
+//       RETURNING *;
+//     `, [authorId, title, content]);
+
+//     const tagList = await createTags(tags);
+
+//     return await addTagsToPost(post.id, tagList);
+//   } catch (error) {
+//     throw error;
+//   }
+// }
+
+async function createPost([
   authorId,
   title,
   content,
-  tags = [] // this is new
-}) {
+  tags = []
+]) {
   try {
     const { rows: [ post ] } = await client.query(`
       INSERT INTO posts("authorId", title, content) 

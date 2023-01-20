@@ -1,8 +1,9 @@
 const express = require('express');
 const usersRouter = express.Router();
+const jwt = require('jsonwebtoken');
 
 // NEW
-const { getAllUsers, getUserByUsername } = require('../db');
+const { getAllUsers, getUserByUsername, createUser } = require('../db');
 
 // UPDATE
 usersRouter.get('/', async (req, res) => {
@@ -13,10 +14,7 @@ usersRouter.get('/', async (req, res) => {
   });
 });
 
-// usersRouter.post('/login', async (req, res, next) => {
-//   console.log(req.body);
-//   res.end();
-// });
+
 usersRouter.post('/login', async (req, res, next) => {
   const { username, password } = req.body;
 
@@ -32,8 +30,9 @@ usersRouter.post('/login', async (req, res, next) => {
     const user = await getUserByUsername(username);
 
     if (user && user.password == password) {
-      // create token & return to user
-      res.send({ message: "you're logged in!" });
+      // const user = { id: user.id, username };
+      const token = jwt.sign({ id: user.id, username}, process.env.JWT_SECRET);  
+      res.send({ message: "you're logged in!", token });
     } else {
       next({ 
         name: 'IncorrectCredentialsError', 
@@ -47,15 +46,47 @@ usersRouter.post('/login', async (req, res, next) => {
   }
 });
 
-const jwt = require('jsonwebtoken');
+usersRouter.post('/register', async (req, res, next) => {
+  const { username, password, name, location } = req.body;
 
-const user = { id: 3, username: 'albert' };
-// encode/encrypt the user
-const token = jwt.sign(user, 'server secret');
+  try {
+    const _user = await getUserByUsername(username);
 
-// decode/decrypt the user
-const recoveredData = jwt.verify(token, 'server secret');
-console.log(recoveredData);
+    if (_user) {
+      next({
+        name: 'UserExistsError',
+        message: 'A user by that username already exists'
+      });
+    }
+
+    const user = await createUser({
+      username,
+      password,
+      name,
+      location,
+    });
+
+    const token = jwt.sign({ 
+      id: user.id, 
+      username
+    }, process.env.JWT_SECRET, {
+      expiresIn: '1w'
+    });
+
+    res.send({ 
+      message: "thank you for signing up",
+      token 
+    });
+  } catch ({ name, message }) {
+    next({ name, message })
+  } 
+});
+
+
+
+// // decode/decrypt the user
+// const recoveredData = jwt.verify(token, 'server secret');
+// console.log(recoveredData);
 
 
 
